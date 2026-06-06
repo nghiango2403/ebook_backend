@@ -4,7 +4,9 @@
 
 # 🕒 LỊCH SỬ CẬP NHẬT TIẾN ĐỘ (SYSTEM LOG)
 
-**Tiến độ tổng thể:** `||░░░░░░░░░░░░░░░░░░░░|| 0/35 Tasks (0%)`
+**Tiến độ tổng thể:** `||█░░░░░░░░░░░░░░░░░░░|| 1/35 Tasks (2.85%)`
+
+* **06/06/2026:** Hoàn thành Task 1: Khởi tạo Express Application.
 
 ---
 
@@ -12,7 +14,7 @@
 
 ## 🚀 HẠ TẦNG KHỞI TẠO HỆ THỐNG
 
-### [ ] Task 1: Khởi tạo Express Application
+### [x] Task 1: Khởi tạo Express Application
 
 **File xử lý:** `src/app.js`
 
