@@ -4,8 +4,9 @@
 
 # 🕒 LỊCH SỬ CẬP NHẬT TIẾN ĐỘ (SYSTEM LOG)
 
-**Tiến độ tổng thể:** `||█░░░░░░░░░░░░░░░░░░░|| 1/35 Tasks (2.85%)`
+**Tiến độ tổng thể:** `||█░░░░░░░░░░░░░░░░░░░|| 2/35 Tasks (5.71%)`
 
+* **06/06/2026:** Hoàn thành Task 2: Khởi tạo Server Entry Point.
 * **06/06/2026:** Hoàn thành Task 1: Khởi tạo Express Application.
 
 ---
@@ -30,7 +31,7 @@
 
 ---
 
-### [ ] Task 2: Khởi tạo Server Entry Point
+### [x] Task 2: Khởi tạo Server Entry Point
 
 **File xử lý:** `src/server.js`
 
