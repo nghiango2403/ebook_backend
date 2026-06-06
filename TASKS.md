@@ -4,8 +4,9 @@
 
 # 🕒 LỊCH SỬ CẬP NHẬT TIẾN ĐỘ (SYSTEM LOG)
 
-**Tiến độ tổng thể:** `||█░░░░░░░░░░░░░░░░░░░|| 2/35 Tasks (5.71%)`
+**Tiến độ tổng thể:** `||██░░░░░░░░░░░░░░░░░░|| 3/35 Tasks (8.57%)`
 
+* **06/06/2026:** Hoàn thành Task 3: Thiết lập Database Connection.
 * **06/06/2026:** Hoàn thành Task 2: Khởi tạo Server Entry Point.
 * **06/06/2026:** Hoàn thành Task 1: Khởi tạo Express Application.
 
@@ -45,7 +46,7 @@
 
 ---
 
-### [ ] Task 3: Thiết lập Database Connection
+### [x] Task 3: Thiết lập Database Connection
 
 **File xử lý:** `src/config/db.js`
 
