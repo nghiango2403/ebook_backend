@@ -4,8 +4,10 @@
 
 # 🕒 LỊCH SỬ CẬP NHẬT TIẾN ĐỘ (SYSTEM LOG)
 
-**Tiến độ tổng thể:** `||████░░░░░░░░░░░░░░░░|| 6/35 Tasks (17.14%)
+**Tiến độ tổng thể:** `||█████░░░░░░░░░░░░░░░|| 8/35 Tasks (22.85%)
 
+* **07/06/2026:** Hoàn thành Task 8: Xây dựng Global Error Handler.
+* **07/06/2026:** Hoàn thành Task 7: Xây dựng Middleware RBAC.
 * **07/06/2026:** Hoàn thành Task 6: Xây dựng Middleware Authentication.
 * **07/06/2026:** Hoàn thành Task 5: Thiết lập Payment Configuration.
 * **06/06/2026:** Hoàn thành Task 4: Thiết lập Firebase Admin SDK.
@@ -101,7 +103,7 @@
 
 ---
 
-### [ ] Task 7: Xây dựng Middleware RBAC
+### [x] Task 7: Xây dựng Middleware RBAC
 
 **File xử lý:** `src/middlewares/rbac.js`
 
@@ -114,7 +116,7 @@
 
 ---
 
-### [ ] Task 8: Xây dựng Global Error Handler
+### [x] Task 8: Xây dựng Global Error Handler
 
 **File xử lý:** `src/middlewares/errorHandler.js`
 
