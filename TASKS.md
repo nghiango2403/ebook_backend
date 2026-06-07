@@ -4,8 +4,9 @@
 
 # 🕒 LỊCH SỬ CẬP NHẬT TIẾN ĐỘ (SYSTEM LOG)
 
-**Tiến độ tổng thể:** `||███░░░░░░░░░░░░░░░░░|| 5/35 Tasks (14.28%)`
+**Tiến độ tổng thể:** `||████░░░░░░░░░░░░░░░░|| 6/35 Tasks (17.14%)
 
+* **07/06/2026:** Hoàn thành Task 6: Xây dựng Middleware Authentication.
 * **07/06/2026:** Hoàn thành Task 5: Thiết lập Payment Configuration.
 * **06/06/2026:** Hoàn thành Task 4: Thiết lập Firebase Admin SDK.
 * **06/06/2026:** Hoàn thành Task 3: Thiết lập Database Connection.
@@ -86,7 +87,7 @@
 
 ---
 
-### [ ] Task 6: Xây dựng Middleware Authentication
+### [x] Task 6: Xây dựng Middleware Authentication
 
 **File xử lý:** `src/middlewares/auth.js`
 
