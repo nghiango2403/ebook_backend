@@ -4,8 +4,9 @@
 
 # 🕒 LỊCH SỬ CẬP NHẬT TIẾN ĐỘ (SYSTEM LOG)
 
-**Tiến độ tổng thể:** `||██░░░░░░░░░░░░░░░░░░|| 4/35 Tasks (11.42%)`
+**Tiến độ tổng thể:** `||███░░░░░░░░░░░░░░░░░|| 5/35 Tasks (14.28%)`
 
+* **07/06/2026:** Hoàn thành Task 5: Thiết lập Payment Configuration.
 * **06/06/2026:** Hoàn thành Task 4: Thiết lập Firebase Admin SDK.
 * **06/06/2026:** Hoàn thành Task 3: Thiết lập Database Connection.
 * **06/06/2026:** Hoàn thành Task 2: Khởi tạo Server Entry Point.
@@ -72,7 +73,7 @@
 
 ---
 
-### [ ] Task 5: Thiết lập Payment Configuration
+### [x] Task 5: Thiết lập Payment Configuration
 
 **File xử lý:** `src/config/payment.js`
 
