@@ -145,7 +145,7 @@
 
 ---
 
-### [ ] Task 10: Xây dựng FCM Sender Service
+### [x] Task 10: Xây dựng FCM Sender Service
 
 **File xử lý:** `src/utils/fcmSender.js`
 
@@ -160,7 +160,7 @@
 
 # II. PHẦN 1: AUTHENTICATION & AUTHORIZATION (TASKS 11 - 17)
 
-### [ ] Task 11: Xây dựng Root Router Aggregator
+### [x] Task 11: Xây dựng Root Router Aggregator
 
 **File xử lý:** `src/modules/index.routes.js`
 

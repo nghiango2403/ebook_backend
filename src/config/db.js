@@ -5,7 +5,6 @@
 
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/ebook_db";
 
 const connectOptions = {
   maxPoolSize: 10, // Cấu hình Connection Pool
@@ -17,7 +16,7 @@ const RETRY_INTERVAL = 5000; // 5 giây
 
 const connectDB = async () => {
   try {
-    await mongoose.connect(MONGODB_URI, connectOptions);
+    await mongoose.connect(process.env.MONGODB_URI, connectOptions);
     // Logging trạng thái kết nối thành công theo quy định LOGGING RULE
     console.log("Database Connected");
     retryCount = 0; // Reset số lần thử lại
