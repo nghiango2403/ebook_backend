@@ -4,8 +4,9 @@
 
 # 🕒 LỊCH SỬ CẬP NHẬT TIẾN ĐỘ (SYSTEM LOG)
 
-**Tiến độ tổng thể:** `||█████░░░░░░░░░░░░░░░|| 8/35 Tasks (22.85%)
+**Tiến độ tổng thể:** `||██████░░░░░░░░░░░░░░|| 9/35 Tasks (25.71%)
 
+* **08/06/2026:** Hoàn thành Task 9: Xây dựng Utility Layer.
 * **07/06/2026:** Hoàn thành Task 8: Xây dựng Global Error Handler.
 * **07/06/2026:** Hoàn thành Task 7: Xây dựng Middleware RBAC.
 * **07/06/2026:** Hoàn thành Task 6: Xây dựng Middleware Authentication.
@@ -129,7 +130,7 @@
 
 ---
 
-### [ ] Task 9: Xây dựng Utility Layer
+### [x] Task 9: Xây dựng Utility Layer
 
 **File xử lý:** `src/utils/helpers.js`
 
