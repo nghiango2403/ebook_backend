@@ -4,8 +4,9 @@
 
 # 🕒 LỊCH SỬ CẬP NHẬT TIẾN ĐỘ (SYSTEM LOG)
 
-**Tiến độ tổng thể:** `||█████████░░░░░░░░░░░|| 12/35 Tasks (34.28%)
+**Tiến độ tổng thể:** `||██████████░░░░░░░░░░░|| 13/35 Tasks (37.14%)
 
+* **10/06/2026:** Hoàn thành Task 13: Khởi tạo Module Permissions.
 * **08/06/2026:** Hoàn thành Task 12: Xây dựng Module Authentication.
 * **08/06/2026:** Hoàn thành Task 10: Xây dựng FCM Sender Service.
 * **08/06/2026:** Hoàn thành Task 9: Xây dựng Utility Layer.
@@ -188,15 +189,16 @@
 
 ---
 
-### [ ] Task 13: Khởi tạo Module Permissions
+### [x] Task 13: Khởi tạo Module Permissions
 
 **File xử lý:** `src/modules/roles/permission.model.js`
 
 **Mục tiêu:**
 
-* `_id`
-* `name`
-* `url`
+* Thêm
+* Sữa
+* Xóa
+* Lấy
 
 ---
 
