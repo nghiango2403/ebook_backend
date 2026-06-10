@@ -10,6 +10,7 @@ import { formatSuccessResponse } from "../utils/helpers.js";
 import authRoutes from "./auth/auth.routes.js";
 import permissionRoutes from "./roles/permission.routes.js";
 import roleRoutes from "./roles/role.routes.js";
+import rolePermissionRoutes from "./roles/role-permission.routes.js";
 
 const router = Router();
 
@@ -37,6 +38,9 @@ router.use("/permissions", permissionRoutes);
 
 // Đăng ký ROUTER module ROLES (/api/v1/roles)
 router.use("/roles", roleRoutes);
+
+// Đăng ký router module role-permissions
+router.use("/role-permissions", rolePermissionRoutes);
 
 // TODO: Register user routes (Task 15)
 // router.use("/users", userRoutes);

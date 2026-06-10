@@ -4,8 +4,9 @@
 
 # 🕒 LỊCH SỬ CẬP NHẬT TIẾN ĐỘ (SYSTEM LOG)
 
-**Tiến độ tổng thể:** `||███████████░░░░░░░░░░|| 14/35 Tasks (40.00%)
+**Tiến độ tổng thể:** `||████████████░░░░░░░░░|| 15/35 Tasks (42.86%)
 
+* **10/06/2026:** Hoàn thành Task 15: Liên kết Role-Permission.
 * **10/06/2026:** Hoàn thành Task 14: Khởi tạo Module Roles.
 * **10/06/2026:** Hoàn thành Task 13: Khởi tạo Module Permissions.
 * **08/06/2026:** Hoàn thành Task 12: Xây dựng Module Authentication.
@@ -222,7 +223,7 @@
 
 ---
 
-### [ ] Task 15: Liên kết Role-Permission
+### [x] Task 15: Liên kết Role-Permission
 
 **File xử lý:** `src/modules/roles/role_permission.model.js`
 
