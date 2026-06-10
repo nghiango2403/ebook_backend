@@ -4,8 +4,9 @@
 
 # 🕒 LỊCH SỬ CẬP NHẬT TIẾN ĐỘ (SYSTEM LOG)
 
-**Tiến độ tổng thể:** `||██████████░░░░░░░░░░░|| 13/35 Tasks (37.14%)
+**Tiến độ tổng thể:** `||███████████░░░░░░░░░░|| 14/35 Tasks (40.00%)
 
+* **10/06/2026:** Hoàn thành Task 14: Khởi tạo Module Roles.
 * **10/06/2026:** Hoàn thành Task 13: Khởi tạo Module Permissions.
 * **08/06/2026:** Hoàn thành Task 12: Xây dựng Module Authentication.
 * **08/06/2026:** Hoàn thành Task 10: Xây dựng FCM Sender Service.
@@ -202,15 +203,22 @@
 
 ---
 
-### [ ] Task 14: Khởi tạo Module Roles
+### [x] Task 14: Khởi tạo Module Roles
 
 **File xử lý:** `src/modules/roles/role.model.js`
 
-**Mục tiêu:**
+**Các role:**
 
 * Normal
 * Editor
 * Admin
+
+**Mục tiêu**
+
+* Thêm
+* Sữa
+* Xóa
+* Lấy
 
 ---
 

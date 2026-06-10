@@ -9,6 +9,7 @@ import { Router } from "express";
 import { formatSuccessResponse } from "../utils/helpers.js";
 import authRoutes from "./auth/auth.routes.js";
 import permissionRoutes from "./roles/permission.routes.js";
+import roleRoutes from "./roles/role.routes.js";
 
 const router = Router();
 
@@ -33,6 +34,9 @@ router.use("/auth", authRoutes);
 
 // Đăng ký mount tuyến đường vào router trung tâm 
 router.use("/permissions", permissionRoutes);
+
+// Đăng ký ROUTER module ROLES (/api/v1/roles)
+router.use("/roles", roleRoutes);
 
 // TODO: Register user routes (Task 15)
 // router.use("/users", userRoutes);
