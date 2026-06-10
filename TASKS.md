@@ -4,8 +4,9 @@
 
 # 🕒 LỊCH SỬ CẬP NHẬT TIẾN ĐỘ (SYSTEM LOG)
 
-**Tiến độ tổng thể:** `||███████░░░░░░░░░░░░░|| 10/35 Tasks (28.57%)
+**Tiến độ tổng thể:** `||█████████░░░░░░░░░░░|| 12/35 Tasks (34.28%)
 
+* **08/06/2026:** Hoàn thành Task 12: Xây dựng Module Authentication.
 * **08/06/2026:** Hoàn thành Task 10: Xây dựng FCM Sender Service.
 * **08/06/2026:** Hoàn thành Task 9: Xây dựng Utility Layer.
 * **07/06/2026:** Hoàn thành Task 8: Xây dựng Global Error Handler.
@@ -172,7 +173,7 @@
 
 ---
 
-### [ ] Task 12: Xây dựng Module Authentication
+### [x] Task 12: Xây dựng Module Authentication
 
 **File xử lý:** `src/modules/auth/*`
 

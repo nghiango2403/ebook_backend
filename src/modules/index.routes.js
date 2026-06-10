@@ -7,6 +7,7 @@
 
 import { Router } from "express";
 import { formatSuccessResponse } from "../utils/helpers.js";
+import authRoutes from "./auth/auth.routes.js";
 
 const router = Router();
 
@@ -26,8 +27,8 @@ router.get("/health", (req, res) => {
  * Đăng ký và kết nối router của các phân hệ chức năng khi được triển khai ở các task sau.
  * Hiện tại các module chưa được khởi tạo, thiết lập dưới dạng TODO Stub theo đúng thiết kế bắt buộc.
  */
-// TODO: Register auth routes (Task 12)
-// router.use("/auth", authRoutes);
+// Đăng ký Module Authentication an toàn dưới prefix /api/v1/auth
+router.use("/auth", authRoutes);
 
 // TODO: Register user routes (Task 15)
 // router.use("/users", userRoutes);
