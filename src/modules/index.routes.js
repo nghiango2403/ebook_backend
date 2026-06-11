@@ -12,6 +12,7 @@ import permissionRoutes from "./roles/permission.routes.js";
 import roleRoutes from "./roles/role.routes.js";
 import rolePermissionRoutes from "./roles/role-permission.routes.js";
 import userRoutes from "./users/user.routes.js";
+import categoryRoutes from "./categories/category.routes.js"
 
 const router = Router();
 
@@ -46,17 +47,14 @@ router.use("/role-permissions", rolePermissionRoutes);
 // Đăng ký router module user
 router.use("/users", userRoutes);
 
-// TODO: Register user routes (Task 15)
-// router.use("/users", userRoutes);
-
 // TODO: Register book routes (Task 18)
 // router.use("/books", bookRoutes);
 
 // TODO: Register chapter routes (Task 21)
 // router.use("/chapters", chapterRoutes);
 
-// TODO: Register category routes (Task 24)
-// router.use("/categories", categoryRoutes);
+// Đăng ký router module category
+router.use("/categories", categoryRoutes);
 
 // TODO: Register comment routes (Task 26)
 // router.use("/comments", commentRoutes);

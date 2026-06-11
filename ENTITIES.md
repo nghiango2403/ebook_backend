@@ -41,6 +41,7 @@
 * `_id`: Object ID / UUID (Khóa chính)
 * `name`: String (Tên thể loại truyện)
 * `zindex`: Number (Số thứ tự sắp xếp hiển thị ưu tiên trên giao diện Flutter, mặc định = `0`)
+* `isHidden`: Bool
 
 ### 6. Entity: Book (Truyện / Sách)
 * `_id`: Object ID / UUID (Khóa chính)
