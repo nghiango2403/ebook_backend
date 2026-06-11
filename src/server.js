@@ -3,7 +3,7 @@
  * @description Điểm khởi chạy (Entry Point) của hệ thống. Đọc biến môi trường, kết nối Database, khởi tạo Firebase, gắn Error Handler và chạy HTTP Server.
  */
 
-import dotenv from "dotenv";
+import "dotenv/config"
 import dns from "node:dns/promises";
 dns.setServers(["1.1.1.1"]);
 
@@ -12,8 +12,6 @@ import connectDB from "./config/db.js";
 import {initializeFirebase} from "./config/firebase.js";
 import errorHandler from "./middlewares/errorHandler.js";
 
-// Đọc biến môi trường
-dotenv.config();
 
 const PORT = process.env.PORT || 5000;
 

@@ -10,12 +10,15 @@ import jwt from "jsonwebtoken";
 import { AppError } from "../../utils/appError.js";
 import { hashPassword, verifyPassword, sanitizeUser } from "../../utils/helpers.js";
 import { sendEmailWithOTP } from "../../utils/mailSender.js";
+// import dotenv from "dotenv";
+// dotenv.config();
 
 // Định nghĩa inline Model dựa theo ENTITY.md
 const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
+  avatar: {type: String, default: ""},
   level: { type: Number, default: 1 },
   coin: { type: Number, default: 0 },
   totalDeposited: { type: Number, default: 0 },

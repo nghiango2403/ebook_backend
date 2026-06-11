@@ -136,3 +136,56 @@ export const formatErrorResponse = (code, message, details = null) => {
     }
   };
 };
+
+/**
+ * 9. Định dạng cấu trúc ngày
+ * @param {string} dateString - Ngày nhập vào
+ * @returns {Object} Ngày được fomat
+ */
+// src/utils/date.js
+
+export const parseDateFlexible = (value) => {
+  if (!value || typeof value !== "string") {
+    return null;
+  }
+
+  // ISO 8601
+  if (/^\d{4}-\d{2}-\d{2}T/.test(value)) {
+    const date = new Date(value);
+    return isNaN(date.getTime()) ? null : date;
+  }
+
+  // dd/MM/yyyy
+  const vnMatch = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+
+  if (vnMatch) {
+    const [, dayStr, monthStr, yearStr] = vnMatch;
+
+    const day = Number(dayStr);
+    const month = Number(monthStr);
+    const year = Number(yearStr);
+
+    const date = new Date(
+      year,
+      month - 1,
+      day,
+      23,
+      59,
+      59,
+      999
+    );
+
+    // Validate ngày thực tế
+    if (
+      date.getFullYear() !== year ||
+      date.getMonth() !== month - 1 ||
+      date.getDate() !== day
+    ) {
+      return null;
+    }
+
+    return date;
+  }
+
+  return null;
+};
