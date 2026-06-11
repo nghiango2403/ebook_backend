@@ -112,3 +112,37 @@ export const handleUpdateAvatar = async (req, res, next) => {
     return next(error);
   }
 };
+
+export const handleUpdateFcmToken = async (req, res, next) => {
+  try {
+    const currentUserId = req.user.userId;
+    let { fcmToken } = req.body;
+
+    // Quy tắc Validation đầu vào nghiêm ngặt theo đặc tả
+    if (fcmToken !== undefined) {
+      if (typeof fcmToken === "string") {
+        fcmToken = fcmToken.trim();
+      }
+    }
+
+    if (!fcmToken) {
+      throw new AppError("VALIDATION_ERROR", "FCM Token không hợp lệ", 400);
+    }
+
+    await userService.updateFcmToken(currentUserId, fcmToken);
+    return res.status(200).json(formatSuccessResponse("Cập nhật FCM Token thành công", null));
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const handleRemoveFcmToken = async (req, res, next) => {
+  try {
+    const currentUserId = req.user.userId;
+
+    await userService.removeFcmToken(currentUserId);
+    return res.status(200).json(formatSuccessResponse("Xóa FCM Token thành công", null));
+  } catch (error) {
+    return next(error);
+  }
+};

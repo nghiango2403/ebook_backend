@@ -4,8 +4,9 @@
 
 # 🕒 LỊCH SỬ CẬP NHẬT TIẾN ĐỘ (SYSTEM LOG)
 
-**Tiến độ tổng thể:** `||█████████████░░░░░░░░||` 16/35 Tasks (45.71%)
+**Tiến độ tổng thể:** `||██████████████░░░░░░░|| 17/35 Tasks (48.57%)
 
+* **10/06/2026:** Hoàn thành Task 17: API Cập nhật FCM Token.
 * **10/06/2026:** Hoàn thành Task 16: Cập nhật Schema User & TimeBan & Tích hợp Cloudflare R2.
 * **10/06/2026:** Hoàn thành Task 15: Liên kết Role-Permission.
 * **10/06/2026:** Hoàn thành Task 14: Khởi tạo Module Roles.
@@ -249,7 +250,7 @@
 
 ---
 
-### [ ] Task 17: API Cập nhật FCM Token
+### [x] Task 17: API Cập nhật FCM Token
 
 **File xử lý:** `src/modules/users/*`
 

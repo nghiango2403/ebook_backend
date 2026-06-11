@@ -194,3 +194,37 @@ export const updateCurrentUserAvatar = async (userId, file) => {
     throw new AppError("STORAGE_ERROR", `Lỗi kết nối bộ lưu trữ Cloudflare R2: ${error.message}`, 500);
   }
 };
+
+/**
+ * Nghiệp vụ cập nhật hoặc ghi đè FCM Token mới cho người dùng hiện tại
+ * @param {string} userId - ID của người dùng từ Token xác thực
+ * @param {string} fcmToken - Chuỗi định danh thiết bị mới nhận từ Flutter Client
+ */
+export const updateFcmToken = async (userId, fcmToken) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new AppError("USER_NOT_FOUND", "Người dùng không tồn tại trên hệ thống", 404);
+  }
+
+  // Ghi đè token mới (mỗi user chỉ giữ một token của thiết bị hoạt động gần nhất)
+  user.fcmToken = fcmToken;
+  await user.save();
+  
+  return null;
+};
+
+/**
+ * Nghiệp vụ xóa hoàn toàn FCM Token (đưa về null) khi người dùng tiến hành đăng xuất
+ * @param {string} userId - ID của người dùng từ Token xác thực
+ */
+export const removeFcmToken = async (userId) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new AppError("USER_NOT_FOUND", "Người dùng không tồn tại trên hệ thống", 404);
+  }
+
+  user.fcmToken = null;
+  await user.save();
+  
+  return null;
+};

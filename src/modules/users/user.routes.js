@@ -17,6 +17,8 @@ const router = Router();
 router.get("/profile", authMiddleware, userController.handleGetCurrentProfile);
 router.patch("/profile", authMiddleware, userController.handleUpdateProfile);
 router.patch("/avatar", authMiddleware, upload.single("avatar"), userController.handleUpdateAvatar);
+router.patch("/fcm-token", authMiddleware, userController.handleUpdateFcmToken);
+router.delete("/fcm-token", authMiddleware, userController.handleRemoveFcmToken);
 
 // Toàn bộ các nhánh Endpoint phía dưới thuộc quyền bảo vệ kiểm soát và quản lý duy nhất của cấp Admin
 router.use(authMiddleware, requireRole("Admin"));
