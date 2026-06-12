@@ -54,13 +54,21 @@
 * `views`: Number (Mặc định = `0`)
 * `creatorId`: Object ID / UUID (Ref sang `User._id`)
 * `createdAt` / `updatedAt`: DateTime
+* `reviewStatus`: String (Giới hạn: `pending`, `approved`, `rejected` - Mặc định = `pending`)
+* `editorId`: Object ID (Ref sang `User` - Biên tập viên chịu trách nhiệm duyệt hiện tại)
 * *Lưu ý cấu trúc:* Đã loại bỏ hoàn toàn trường `rating`.
 
-### 7. Entity: Book_Editor (Phân công quản lý Scope)
+### 7. Entity: Book_Review_Log (Nhật ký lịch sử duyệt sách)
 * `_id`: Object ID / UUID (Khóa chính)
 * `bookId`: Object ID / UUID (Ref sang `Book`)
 * `editorId`: Object ID / UUID (Ref sang `User`)
-* *Ràng buộc:* `Compound Index` `{ bookId: 1, editorId: 1 }`
+* `reviewStatus`: String (Giới hạn: `pending`, `approved`, `rejected`)
+* `note`: String (Lý do duyệt đạt hoặc từ chối, mặc định = `""`)
+* `reviewCount`: Number (Số thứ tự của phiên duyệt/sửa đổi)
+* `createdAt`: DateTime (Thời gian ghi nhận phiên duyệt)
+* *Ràng buộc:* 
+    Compound Index theo Sách: { bookId: 1, createdAt: -1 }
+    ,Compound Index theo Editor: { editorId: 1, reviewStatus: 1, createdAt: -1 }
 
 ### 8. Entity: Chapter (Chương truyện)
 * `_id`: Object ID / UUID (Khóa chính)
@@ -70,6 +78,7 @@
 * `content`: LongString / Array
 * `coinRequired`: Number (Mặc định = `0`)
 * `status`: String (`pending`, `approved`, `hidden`)
+* `reviewStatus`: String (Giới hạn: `pending`, `approved`, `rejected` - Mặc định = `pending`)
 * `createdAt` / `updatedAt`: DateTime
 * *Ràng buộc:* `Compound Unique Index` `{ bookId: 1, chapterNumber: 1 }`
 
@@ -84,6 +93,7 @@
 * `chapterId`: Object ID / UUID (Có thể `null`)
 * `content`: String
 * `parentId`: Object ID / UUID (Cơ chế đệ quy, mặc định `null`)
+* `reviewStatus`: String (Giới hạn: `pending`, `approved`, `rejected` - Mặc định = `pending`)
 * `createdAt` / `updatedAt`: DateTime
 
 ### 10. Entity: Follow (Theo dõi)
@@ -130,3 +140,27 @@
 * `receiverId`: Object ID / UUID (Có giá trị khi `type = DONATE`, ngược lại `null`)
 * `chapterId`: Object ID / UUID (Có giá trị khi `type = BUY_CHAPTER`, ngược lại `null`)
 * `createdAt`: DateTime
+
+### 15. Entity: Chapter_Review_Log (Nhật ký lịch sử duyệt chương)
+* `_id`: Object ID / UUID (Khóa chính)
+* `chapterId`: Object ID / UUID (Ref sang `Chapter`)
+* `editorId`: Object ID / UUID (Ref sang `User`)
+* `reviewStatus`: String (Giới hạn: `pending`, `approved`, `rejected`)
+* `note`: String (Lý do duyệt đạt hoặc từ chối, mặc định = `""`)
+* `reviewCount`: Number (Số thứ tự của phiên duyệt/sửa đổi)
+* `createdAt`: DateTime (Thời gian ghi nhận phiên duyệt)
+* *Ràng buộc:* 
+    Compound Index theo Chương: { chapterId: 1, createdAt: -1 }
+    ,Compound Index theo Editor: { editorId: 1, reviewStatus: 1, createdAt: -1 }
+
+### 16. Entity: Comment_Review_Log (Nhật ký lịch sử duyệt Comment)
+* `_id`: Object ID / UUID (Khóa chính)
+* `commentId`: Object ID / UUID (Ref sang `Chapter`)
+* `editorId`: Object ID / UUID (Ref sang `User`)
+* `reviewStatus`: String (Giới hạn: `pending`, `approved`, `rejected`)
+* `note`: String (Lý do duyệt đạt hoặc từ chối, mặc định = `""`)
+* `reviewCount`: Number (Số thứ tự của phiên duyệt/sửa đổi)
+* `createdAt`: DateTime (Thời gian ghi nhận phiên duyệt)
+* *Ràng buộc:* 
+    Compound Index theo Bình luận: { commentId: 1, createdAt: -1 }
+    ,Compound Index theo Editor: { editorId: 1, reviewStatus: 1, createdAt: -1 }

@@ -279,16 +279,18 @@
 
 ---
 
-### [x] Task 19: Schema Book & BookEditor
+### [x] Task 19: Tái cấu trúc Schema Book & Khởi tạo Hệ thống Review Logs cho Editor
 
-**File xử lý:** `src/modules/books/book.model.js`, `src/modules/books/book_editor.model.js`
+**File xử lý:** 
+* `src/modules/books/book.model.js`
+* `src/modules/books/book_review_log.model.js`
 
 **Mục tiêu:**
 
-* Liên kết Category
-* Trạng thái sách
-* Compound Index
-* Mapping Editor quản lý
+* Liên kết Category: Tích hợp categoryId liên kết chặt chẽ với thực thể Category.
+* Trạng thái sách & Duyệt: Bổ sung status vận hành truyện và bộ đôi quản lý trạng thái duyệt hiện tại (reviewStatus và editorId).
+* Compound Index tối ưu: Thiết lập chỉ mục kép phục vụ bộ lọc tìm kiếm của Độc giả (categoryId + status + isBan) và chỉ mục phục vụ Full-Text Search (title).
+* Audit Log Lịch sử Duyệt: Khởi tạo bảng BookReviewLog lưu vết chi tiết các phiên duyệt của Editor, cấu hình Compound Index theo quy tắc ESR (bookId + createdAt và editorId + reviewStatus + createdAt) để tối ưu hóa sắp xếp mới nhất.
 
 ---
 
@@ -341,13 +343,15 @@
 
 ### [ ] Task 24: Module Chapters CRUD
 
-**File xử lý:** `src/modules/chapters/*`
+**File xử lý:** `src/modules/chapters/*`, `src/modules/chapters/chapter_review_log.model.js`
 
 **Mục tiêu:**
 
 * CRUD chương
 * Unique `{ bookId, chapterNumber }`
 * Quản lý giá mở khóa chương
+* Triển khai Schema: chapter_review_log.model.js để lưu vết các phiên duyệt chương của Editor (chapterId, bookId, editorId, reviewStatus, reviewCount, createdAt, reviewedAt).
+* Viết API Duyệt Chương cho Editor & ghi log đồng thời.
 
 ---
 
@@ -355,13 +359,14 @@
 
 ### [ ] Task 25: Bình luận đa cấp
 
-**File xử lý:** `src/modules/comments/*`
+**File xử lý:** `src/modules/comments/*`, ``
 
 **Mục tiêu:**
 
-* Comment
-* Reply
-* Phân trang bình luận
+* Thiết lập Schema Comment hỗ trợ phân cấp (Self-reference qua parentId). Viết API lấy danh sách bình luận phân trang theo cơ chế cây.
+* Xây dựng Schema Report (Lưu thông tin khi User bấm báo cáo xấu một comment).
+* Triển khai Schema: comment_review_log.model.js để kiểm soát lịch sử duyệt bình luận với cấu trúc unique { reportId: 1 } chặn trùng lặp.
+* Viết API xử lý báo cáo dành cho Editor.
 
 ---
 

@@ -7,49 +7,60 @@
 import mongoose from "mongoose";
 
 const BookSchema = new mongoose.Schema(
-  {
-    title: {
-      type: String,
-      required: true,
-      trim: true
+    {
+        title: {
+            type: String,
+            required: true,
+            trim: true
+        },
+        summary: {
+            type: String,
+            default: ""
+        },
+        coverImage: {
+            type: String,
+            default: ""
+        },
+        categoryId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Category",
+            required: true
+        },
+        status: {
+            type: String,
+            enum: ["pending", "completed", "pause"],
+            default: "pending"
+        },
+        isBan: {
+            type: Boolean,
+            default: false
+        },
+        views: {
+            type: Number,
+            default: 0
+        },
+        creatorId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true
+        },
+        reviewStatus: {
+            type: String, 
+            enum: ["pending", "approved", "rejected"], 
+            default: "pending"
+        },
+        editorId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true
+        },
+
     },
-    summary: {
-      type: String,
-      default: ""
-    },
-    coverImage: {
-      type: String,
-      default: ""
-    },
-    categoryId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Category",
-      required: true
-    },
-    status: {
-      type: String,
-      enum: ["pending", "completed", "pause"],
-      default: "pending"
-    },
-    isBan: {
-      type: Boolean,
-      default: false
-    },
-    views: {
-      type: Number,
-      default: 0
-    },
-    creatorId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true
+    {
+        collection: "books",
+        versionKey: false,
+        timestamps: true
     }
-  },
-  {
-    collection: "books",
-    versionKey: false,
-    timestamps: true 
-  }
 );
 
 // CHIẾN LƯỢC KHỞI TẠO CHỈ MỤC (INDEX RULES) TỐI ƯU HÓA TRUY VẤN
