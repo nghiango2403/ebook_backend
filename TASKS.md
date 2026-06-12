@@ -4,8 +4,9 @@
 
 # 🕒 LỊCH SỬ CẬP NHẬT TIẾN ĐỘ (SYSTEM LOG)
 
-**Tiến độ tổng thể:** `||████████████████░░░░|| 18/35 Tasks (51.43%)
+**Tiến độ tổng thể:** `||███████████████████░░|| 19/35 Tasks (54.29%)
 
+* **12/06/2026:** Hoàn thành Task 19: Schema Book & Book_Editor.
 * **11/06/2026:** Hoàn thành Task 18: Module Categories CRUD.
 * **10/06/2026:** Hoàn thành Task 17: API Cập nhật FCM Token.
 * **10/06/2026:** Hoàn thành Task 16: Cập nhật Schema User & TimeBan & Tích hợp Cloudflare R2.
@@ -278,7 +279,7 @@
 
 ---
 
-### [ ] Task 19: Schema Book & BookEditor
+### [x] Task 19: Schema Book & BookEditor
 
 **File xử lý:** `src/modules/books/book.model.js`, `src/modules/books/book_editor.model.js`
 
