@@ -21,4 +21,12 @@ router.post(
   bookController.handleCreateBook
 );
 
+// API: PATCH /api/v1/books?id= - Chỉnh sửa thông tin truyện
+router.patch(
+  "/",
+  authMiddleware,
+  upload.single("coverImage"),
+  bookController.handleUpdateBook
+);
+
 export default router;

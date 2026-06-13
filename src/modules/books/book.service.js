@@ -115,10 +115,10 @@ export const createBook = async ({ title, summary, categoryId, file, userId }) =
     coverImage: coverImageUrl,
     categoryId,
     creatorId: userId,
-    status: "pending",      
+    status: "pending",
     reviewStatus: "pending",
-    isBan: false,           
-    views: 0,               
+    isBan: false,
+    views: 0,
     editorId: assignedEditorId // Sẽ nhận ID của Editor rảnh nhất HOẶC Admin rảnh nhất
   });
 
@@ -132,4 +132,110 @@ export const createBook = async ({ title, summary, categoryId, file, userId }) =
   });
 
   return newBook;
+};
+
+/**
+ * [TASK 21] - Nghiệp vụ Chỉnh sửa thông tin truyện nâng cao
+ */
+export const updateBook = async ({ id, payload, file, currentUser }) => {
+  const { userId, roleName } = currentUser;
+
+  // 1. Kiểm tra thực thể Book phải tồn tại trong cơ sở dữ liệu
+  const book = await Book.findById(id);
+  if (!book) {
+    throw new AppError("BOOK_NOT_FOUND", "Không tìm thấy truyện", 404);
+  }
+  console.log(currentUser)
+  // 2. Chốt chặn bảo mật - Kiểm tra ma trận quyền sở hữu
+  let hasPermission = false;
+  if (roleName === "Admin") {
+    hasPermission = true;
+  } else if (roleName === "Creator" && book.creatorId.toString() === userId) {
+    hasPermission = true;
+  } else if (roleName === "Editor" && book.editorId?.toString() === userId) {
+    hasPermission = true;
+  }
+
+  if (!hasPermission) {
+    throw new AppError("PERMISSION_DENIED", "Bạn không có quyền chỉnh sửa truyện này", 403);
+  }
+
+  // Chống giả mạo payload hệ thống
+  delete payload.creatorId;
+  delete payload.reviewStatus;
+  delete payload.editorId;
+  delete payload.views;
+  delete payload.isBan;
+
+  // 3. Kiểm tra sự tồn tại của danh mục Category mới nếu client gửi lên
+  if (payload.categoryId) {
+    const isCategoryExist = await Category.findById(payload.categoryId);
+    if (!isCategoryExist) {
+      throw new AppError("CATEGORY_NOT_FOUND", "Không tìm thấy thể loại", 404);
+    }
+  }
+
+  // Khởi tạo Object chứa các dữ liệu thực sự thay đổi so với bản gốc
+  const updateDraft = {};
+  if (payload.title !== undefined && payload.title !== book.title) updateDraft.title = payload.title;
+  if (payload.summary !== undefined && payload.summary !== book.summary) updateDraft.summary = payload.summary;
+  if (payload.status !== undefined && payload.status !== book.status) {
+    const validStatuses = ["pending", "completed", "pause"];
+    if (validStatuses.includes(payload.status)) {
+      updateDraft.status = payload.status;
+    } else {
+      throw new Error(`Trạng thái không hợp lệ: ${payload.status}`);
+    }
+  }
+  if (payload.categoryId !== undefined && payload.categoryId.toString() !== book.categoryId.toString()) {
+    updateDraft.categoryId = payload.categoryId;
+  }
+
+  // 4. Xử lý upload ảnh bìa mới lên Cloudflare R2
+  if (file) {
+    const fileExtension = file.originalname.split(".").pop();
+    const r2FileName = `books/${userId}-${Date.now()}.${fileExtension}`;
+
+    try {
+      const uploadCommand = new PutObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME,
+        Key: r2FileName,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      });
+
+      await r2Client.send(uploadCommand);
+      updateDraft.coverImage = `${process.env.R2_PUBLIC_URL}/${r2FileName}`;
+    } catch (r2Error) {
+      throw new AppError("UPLOAD_IMAGE_FAILED", "Tải ảnh mới lên hệ thống lưu trữ Cloudflare R2 thất bại", 500);
+    }
+  }
+
+  // Nếu không có bất kỳ trường nào thay đổi hoặc không có ảnh mới, không cần xử lý tiếp
+  if (Object.keys(updateDraft).length === 0) {
+    return book;
+  }
+
+  // 5. CHUYỂN ĐỔI BIẾN ĐỘNG: Đóng gói toàn bộ bản nháp sửa đổi thành chuỗi JSON đưa vào trường note
+  const logNotePayload = {
+    type: "EDIT_REQUEST",
+    draftData: updateDraft,
+    userReason: "User updated book details"
+  };
+
+  // 6. Truy vết số thứ tự phiên kiểm duyệt trước đó để tăng tiến
+  const lastLog = await BookReviewLog.findOne({ bookId: id }).sort({ createdAt: -1 }).lean();
+  const previousReviewCount = lastLog ? lastLog.reviewCount : 0;
+
+  // 7. Tạo bản ghi BookReviewLog chứa dữ liệu sửa đổi tạm thời
+  await BookReviewLog.create({
+    bookId: book._id,
+    editorId: userId,
+    reviewStatus: "pending",
+    note: JSON.stringify(logNotePayload), // Lưu vết JSON string
+    reviewCount: previousReviewCount + 1
+  });
+
+
+  return null;
 };

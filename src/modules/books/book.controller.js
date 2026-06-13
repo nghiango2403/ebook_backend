@@ -54,3 +54,61 @@ export const handleCreateBook = async (req, res, next) => {
     return next(error);
   }
 };
+
+
+export const handleUpdateBook = async (req, res, next) => {
+  try {
+    const { id } = req.query; // BẮT BUỘC: Sử dụng req.query.id theo yêu cầu đề bài
+    const { title, summary, categoryId, status } = req.body;
+    const file = req.file;
+
+    // 1. Kiểm tra Validation cho ID truyện bắt buộc
+    if (!id) {
+      throw new AppError("VALIDATION_ERROR", "Mã truyện (id) truyền lên URL query là bắt buộc", 400);
+    }
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new AppError("VALIDATION_ERROR", "Mã truyện (id) không đúng định dạng ObjectId", 400);
+    }
+
+    // 2. Kiểm tra Validation tùy chọn cho các trường dữ liệu nếu client gửi lên
+    if (title !== undefined) {
+      const trimmedTitle = title.trim();
+      if (!trimmedTitle) {
+        throw new AppError("VALIDATION_ERROR", "Tiêu đề truyện không được để trống", 400);
+      }
+      if (trimmedTitle.length < 2 || trimmedTitle.length > 255) {
+        throw new AppError("VALIDATION_ERROR", "Tiêu đề truyện phải từ 2 đến 255 ký tự", 400);
+      }
+      req.body.title = trimmedTitle; // Cập nhật lại giá trị đã trim sạch
+    }
+
+    if(!status) {
+      throw new AppError("VALIDATION_ERROR", "Trạng thái truyện không được để trống", 400)
+    }
+
+    if (categoryId !== undefined && !mongoose.Types.ObjectId.isValid(categoryId)) {
+      throw new AppError("VALIDATION_ERROR", "Mã thể loại truyện (categoryId) không đúng định dạng ObjectId", 400);
+    }
+
+    // Đóng gói thông tin tài khoản người dùng từ token xác thực
+    const currentUser = {
+      userId: req.user?.userId,
+      roleName: req.user?.roleId.name 
+    };
+
+    // 3. Đẩy toàn bộ dữ liệu xuống tầng Service (Không query DB hay gọi req/res tại đây)
+    const updatedBook = await bookService.updateBook({
+      id,
+      payload: { title: req.body.title, summary, categoryId, status },
+      file,
+      currentUser
+    });
+
+    // 4. Trả về cấu trúc phản hồi chuẩn hóa formatSuccessResponse theo API_CONTRACT.md
+    return res.status(200).json(
+      formatSuccessResponse("Cập nhật truyện thành công", { book: updatedBook })
+    );
+  } catch (error) {
+    return next(error);
+  }
+};

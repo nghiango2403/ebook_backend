@@ -4,8 +4,9 @@
 
 # 🕒 LỊCH SỬ CẬP NHẬT TIẾN ĐỘ (SYSTEM LOG)
 
-**Tiến độ tổng thể:** `||████████████████████░|| 20/35 Tasks (57.14%)
+**Tiến độ tổng thể:** `||█████████████████████░|| 21/35 Tasks (60.00%)
 
+* **13/06/2026:** Hoàn thành Task 21: Phát triển API Chỉnh sửa Truyện
 * **12/06/2026:** Hoàn thành Task 20: API Tạo Truyện & Đóng gói luồng tải lên Cloudflare R2.
 * **12/06/2026:** Hoàn thành Task 19: Schema Book & Book_Editor.
 * **11/06/2026:** Hoàn thành Task 18: Module Categories CRUD.
@@ -307,7 +308,7 @@
 
 ---
 
-### [ ] Task 21: API Chỉnh sửa Truyện
+### [x] Task 21: API Chỉnh sửa Truyện
 
 **File xử lý:** `src/modules/books/*`
 
