@@ -162,7 +162,6 @@ export const updateCurrentUserAvatar = async (userId, file) => {
   const fileExtension = file.originalname.split(".").pop();
   const r2FileName = `avatars/${userId}-${Date.now()}.${fileExtension}`;
   
-
   try {
     // 2. Thiết lập Command đẩy dữ liệu thô (Buffer) từ RAM lên Cloudflare R2 Bucket
     const uploadCommand = new PutObjectCommand({
@@ -171,7 +170,6 @@ export const updateCurrentUserAvatar = async (userId, file) => {
       Body: file.buffer,
       ContentType: file.mimetype,
     });
-
     await r2Client.send(uploadCommand);
 
     // 3. Khởi tạo đường dẫn URL CDN công khai trỏ trực tiếp đến tệp tin vừa upload

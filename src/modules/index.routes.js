@@ -13,6 +13,7 @@ import roleRoutes from "./roles/role.routes.js";
 import rolePermissionRoutes from "./roles/role-permission.routes.js";
 import userRoutes from "./users/user.routes.js";
 import categoryRoutes from "./categories/category.routes.js"
+import bookRoutes from "./books/book.routes.js"
 
 const router = Router();
 
@@ -48,7 +49,7 @@ router.use("/role-permissions", rolePermissionRoutes);
 router.use("/users", userRoutes);
 
 // TODO: Register book routes (Task 18)
-// router.use("/books", bookRoutes);
+router.use("/books", bookRoutes);
 
 // TODO: Register chapter routes (Task 21)
 // router.use("/chapters", chapterRoutes);
