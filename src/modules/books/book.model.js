@@ -39,6 +39,10 @@ const BookSchema = new mongoose.Schema(
             type: Number,
             default: 0
         },
+        totalChapter: {
+            type: Number,
+            default: 0
+        },
         creatorId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",

@@ -225,3 +225,152 @@ export const handleUnbanBook = async (req, res, next) => {
     return next(error);
   }
 };
+
+
+export const handleGetBooks = async (req, res, next) => {
+  try {
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const { keyword, categoryId, status, sort, minChapter } = req.query;
+
+    // 1. Kiểm tra định dạng categoryId nếu có truyền lên
+    if (categoryId && !mongoose.Types.ObjectId.isValid(categoryId)) {
+      throw new AppError("INVALID_CATEGORY_ID", "Mã thể loại không hợp lệ", 400);
+    }
+
+    // 2. Kiểm tra status có nằm trong danh sách cho phép (enum) hay không
+    const validStatuses = ["pending", "approved", "rejected"];
+    if (status && !validStatuses.includes(status)) {
+      throw new AppError("INVALID_STATUS", "Trạng thái truyện không hợp lệ", 400);
+    }
+
+    // 3. Kiểm tra minChapter nếu có truyền lên phải là số nguyên dương
+    if (minChapter) {
+      const parsedMinChapter = Number(minChapter);
+      if (isNaN(parsedMinChapter) || parsedMinChapter < 0 || !Number.isInteger(parsedMinChapter)) {
+        throw new AppError("INVALID_MIN_CHAPTER", "Số chương tối thiểu phải là một số nguyên dương", 400);
+      }
+    }
+
+    let isAdmin = req.user?.roleId.name === "Admin";
+
+    const result = await bookService.getBooks({
+      page,
+      limit,
+      filters: { keyword, categoryId, status, minChapter },
+      sortType: sort,
+      isAdmin
+    });
+
+    return res.status(200).json(formatSuccessResponse("Lấy danh sách truyện thành công", result));
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const handleGetBookDetail = async (req, res, next) => {
+  try {
+    const { id } = req.query; // BẮT BUỘC: Sử dụng req.query.id, không sử dụng req.params
+
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      throw new AppError("VALIDATION_ERROR", "Mã truyện (id) không hợp lệ hoặc không được để trống", 400);
+    }
+
+    // Nhận diện tài khoản ẩn danh để mở rộng quyền xem truyện bị Ban hoặc chưa duyệt
+    let userContext = { userId: req.user?.userId, roleName: req.user?.roleId.name };
+    const bookDetail = await bookService.getBookDetail({ id, userContext });
+    return res.status(200).json(formatSuccessResponse("Lấy chi tiết truyện thành công", bookDetail));
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const handleGetMyBooks = async (req, res, next) => {
+  try {
+    const userId = req.user?.userId;
+    const myBooks = await bookService.getMyBooks(userId);
+    return res.status(200).json(formatSuccessResponse("Lấy danh sách truyện của tôi thành công", { items: myBooks }));
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const handleGetMyReviews = async (req, res, next) => {
+  try {
+    const userId = req.user?.userId;
+    const myReviews = await bookService.getMyReviews(userId);
+    return res.status(200).json(formatSuccessResponse("Lấy danh sách truyện chờ duyệt của tôi thành công", { items: myReviews }));
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const handleChangeBookEditor = async (req, res, next) => {
+  try {
+    const { bookId } = req.query; 
+    const { editorId } = req.body;
+
+    if (!bookId || !mongoose.Types.ObjectId.isValid(bookId)) {
+      throw new AppError("VALIDATION_ERROR", "Mã truyện (bookId) không hợp lệ hoặc bị thiếu", 400);
+    }
+    if (!editorId || !mongoose.Types.ObjectId.isValid(editorId)) {
+      throw new AppError("VALIDATION_ERROR", "Mã Biên tập viên (editorId) không hợp lệ hoặc bị thiếu", 400);
+    }
+
+    const result = await bookService.changeBookEditor({ bookId, targetEditorId: editorId });
+    
+    return res.status(200).json(formatSuccessResponse("Thay đổi Biên tập viên phụ trách truyện thành công", { book: result }));
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const handleGetEditorBooks = async (req, res, next) => {
+  try {
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const { keyword, categoryId, status, sort, minChapter } = req.query;
+    const editorId = req.query.editorId; 
+
+    // 1. Kiểm tra định dạng categoryId nếu có truyền lên
+    if (categoryId && !mongoose.Types.ObjectId.isValid(categoryId)) {
+      throw new AppError("INVALID_CATEGORY_ID", "Mã thể loại không hợp lệ", 400);
+    }
+
+    // 2. Kiểm tra status có nằm trong danh sách cho phép (enum) hay không
+    const validStatuses = ["pending", "approved", "rejected"];
+    if (status && !validStatuses.includes(status)) {
+      throw new AppError("INVALID_STATUS", "Trạng thái truyện không hợp lệ", 400);
+    }
+
+    // 3. Kiểm tra minChapter nếu có truyền lên phải là số nguyên dương
+    if (minChapter) {
+      const parsedMinChapter = Number(minChapter);
+      if (isNaN(parsedMinChapter) || parsedMinChapter < 0 || !Number.isInteger(parsedMinChapter)) {
+        throw new AppError("INVALID_MIN_CHAPTER", "Số chương tối thiểu phải là một số nguyên dương", 400);
+      }
+    }
+
+    // 4. Kiểm tra nếu không truyền hoặc truyền rỗng giá trị editorId
+    if (!editorId) {
+      throw new AppError("EDITOR_ID_REQUIRED", "Yêu cầu mã định danh Biên tập viên (editorId)", 400);
+    }
+
+    // 5. Kiểm tra nếu editorId truyền lên sai định dạng cấu trúc MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(editorId)) {
+      throw new AppError("INVALID_EDITOR_ID", "Mã định danh Biên tập viên (editorId) không đúng định dạng hình thức", 400);
+    }
+
+    const result = await bookService.getEditorBooks({
+      page,
+      limit,
+      filters: { keyword, categoryId, status, minChapter },
+      sortType: sort,
+      editorId
+    });
+
+    return res.status(200).json(formatSuccessResponse("Lấy danh sách truyện của biên tập viên thành công", result));
+  } catch (error) {
+    return next(error);
+  }
+};

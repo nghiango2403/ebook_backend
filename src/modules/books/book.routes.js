@@ -77,4 +77,37 @@ router.patch(
   bookController.handleUnbanBook
 );
 
+// API: GET /api/v1/books - Danh sách truyện công khai
+router.get("/", authMiddleware, bookController.handleGetBooks);
+
+// API: GET /api/v1/books/detail - Chi tiết truyện công khai & Tăng lượt xem (Không yêu cầu đăng nhập)
+router.get("/detail", authMiddleware, bookController.handleGetBookDetail);
+
+// API: GET /api/v1/books/my-books - Danh sách truyện của tôi (Bắt buộc đăng nhập - Role Creator/Normal)
+router.get("/my-books", authMiddleware, bookController.handleGetMyBooks);
+
+// API: GET /api/v1/books/my-reviews - Danh sách truyện chờ duyệt được gán cho tôi (Bắt buộc đăng nhập - Editor & Admin)
+router.get(
+  "/my-reviews",
+  authMiddleware,
+  requireRole("Editor", "Admin"),
+  bookController.handleGetMyReviews
+);
+
+// API: PATCH /api/books/change-editor -  Gán / thay đổi Biên tập viên phụ trách kiểm duyệt truyện (Chốt chặn bảo mật chỉ cho Admin)
+router.patch(
+  "/change-editor",
+  authMiddleware,
+  requireRole("Admin"),
+  bookController.handleChangeBookEditor
+);
+
+// API: GET /api/books/editor-assigned -  Lấy danh sách truyện phân công riêng cho Editor
+router.get(
+  "/editor-assigned",
+  authMiddleware,
+  requireRole("Editor", "Admin"),
+  bookController.handleGetEditorBooks
+);
+
 export default router;

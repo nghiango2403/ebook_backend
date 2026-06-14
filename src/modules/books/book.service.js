@@ -29,7 +29,13 @@ const findLeastLoadedEditor = async () => {
 
   // 2. Thử lấy danh sách các User có vai trò là Editor trước
   if (editorRole) {
-    targetUsers = await User.find({ roleId: editorRole._id }, "_id").lean();
+    targetUsers = await User.find({
+      roleId: editorRole._id, $or: [
+        { timeBan: { $lt: now } },
+        { timeBan: { $exists: false } },
+        { timeBan: null }
+      ]
+    }, "_id").lean();
   }
 
   // 3. CƠ CHẾ DỰ PHÒNG: Nếu hoàn toàn không có Editor nào, chuyển mục tiêu sang quét nhóm Admin
@@ -119,6 +125,7 @@ export const createBook = async ({ title, summary, categoryId, file, userId }) =
     reviewStatus: "pending",
     isBan: false,
     views: 0,
+    totalChapter,
     editorId: assignedEditorId // Sẽ nhận ID của Editor rảnh nhất HOẶC Admin rảnh nhất
   });
 
@@ -492,7 +499,7 @@ export const rejectBook = async ({ id, note, currentUser }) => {
   if (!isEditRequest) {
     // Nếu từ chối một cuốn truyện mới tạo (Task 20), ta đưa reviewStatus của Book về 'rejected'
     await Book.findByIdAndUpdate(currentLog.bookId, {
-      $set: { 
+      $set: {
         reviewStatus: "rejected",
         editorId: userId // Ghi nhận editor/admin thực tế xử lý từ chối
       }
@@ -503,7 +510,7 @@ export const rejectBook = async ({ id, note, currentUser }) => {
   currentLog.reviewStatus = "rejected";
   currentLog.note = note; // Ghi nhận lý do từ chối cụ thể (ví dụ: "Ảnh bìa nhạy cảm", "Sai chính tả")
   currentLog.editorId = userId; // Ghi nhận ID người thực tế thao tác bấm nút (Phòng trường hợp Admin duyệt thay)
-  
+
   await currentLog.save();
 
   // 7. Lấy lại dữ liệu truyện sau khi xử lý để trả về đồng bộ với API Contract
@@ -580,4 +587,267 @@ export const unbanBook = async (id, userId) => {
   });
 
   return updatedBook;
+};
+
+/**
+ * API 1: Nghiệp vụ Lấy danh sách truyện có phân trang và sắp xếp linh hoạt
+ */
+export const getBooks = async ({ page, limit, filters, sortType, isAdmin }) => {
+  // 1. Thiết lập chốt chặn quy tắc hiển thị mặc định
+  const query = {};
+
+  if (!isAdmin) {
+    query.isBan = false;           // User thường không nhìn thấy truyện bị cấm
+    query.reviewStatus = "approved"; // User thường chỉ được xem truyện đã qua phê duyệt
+  }
+
+  // 2. Tích hợp bộ lọc động (Dynamic Filters)
+  if (filters.keyword) {
+    query.title = { $regex: filters.keyword, $options: "i" }; // Tìm kiếm mờ không phân biệt hoa thường
+  }
+
+  if (filters.categoryId) {
+    query.categoryId = filters.categoryId;
+  }
+
+  if (filters.status) {
+    query.status = filters.status;
+  }
+
+  if (filters.minChapter && !isNaN(filters.minChapter)) {
+    query.chapterCount = { $gte: Number(filters.minChapter) };
+  }
+
+  // 3. Tích hợp ma trận sắp xếp tối ưu hóa hiệu năng (Sort Engine)
+  let sortCriteria = { createdAt: -1 }; // Mặc định: Truyện mới tạo lên đầu (newest)
+
+  if (sortType === "oldest") {
+    sortCriteria = { createdAt: 1 };        // Truyện cũ nhất lên đầu
+  } else if (sortType === "most-view") {
+    sortCriteria = { views: -1 };            // Truyện nhiều lượt xem nhất lên đầu
+  } else if (sortType === "recently-updated") {
+    sortCriteria = { updatedAt: -1 };       // MỚI: Truyện vừa cập nhật chương/thông tin mới nhất lên đầu
+  }
+
+
+  const skip = (page - 1) * limit;
+
+  // 4. Thực thi truy vấn kết hợp chiếu dữ liệu hẹp và Populate chọn lọc
+  const books = await Book.find(query)
+    .sort(sortCriteria)
+    .skip(skip)
+    .limit(limit)
+    .populate({ path: "creatorId", select: "_id username" }) // Chỉ lấy _id và username
+    .populate({ path: "categoryId", select: "_id name" })    // Chỉ lấy _id và name
+    .lean();
+
+  // 5. Chuyển đổi cấu trúc đầu ra tương thích hoàn hảo với Contract UI
+  const mappedItems = books.map(book => ({
+    _id: book._id,
+    title: book.title,
+    coverImage: book.coverImage,
+    views: book.views,
+    totalChapter: book.totalChapter || 0, // Trường mới bổ sung giúp tối ưu hóa luồng, loại bỏ countDocuments
+    status: book.status,
+    author: book.creatorId ? { _id: book.creatorId._id, username: book.creatorId.username } : null,
+    category: book.categoryId ? { _id: book.categoryId._id, name: book.categoryId.name } : null
+  }));
+
+  const total = await Book.countDocuments(query);
+
+  return {
+    items: mappedItems,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
+  };
+};
+
+/**
+ * Lấy chi tiết thông tin truyện & Thực thi bộ đếm lượt xem nguyên tử
+ */
+export const getBookDetail = async ({ id, userContext }) => {
+  const { userId, roleName } = userContext;
+
+  // 1. Truy vấn thực thể Book kèm populate dữ liệu liên kết
+  const book = await Book.findById(id)
+    .populate({ path: "creatorId", select: "_id username" })
+    .populate({ path: "categoryId", select: "_id name" })
+    .lean();
+
+  if (!book) {
+    throw new AppError("BOOK_NOT_FOUND", "Không tìm thấy truyện", 404);
+  }
+
+  console.log(book.editorId.toString() === userId);
+  // 2. Kiểm tra phân quyền quy tắc hiển thị của User thường
+  const isAdminOrEditor = roleName === "Admin" || (roleName === "Editor" && book.editorId.toString() === userId);
+  const isOwner = userId && book.creatorId?._id.toString() === userId;
+
+  if (!isAdminOrEditor && !isOwner) {
+    if (book.isBan === true) {
+      throw new AppError("PERMISSION_DENIED", "Truyện này đã bị khóa do vi phạm nội dung", 403);
+    }
+    if (book.reviewStatus !== "approved") {
+      throw new AppError("PERMISSION_DENIED", "Bạn không có quyền xem truyện chưa qua phê duyệt", 403);
+    }
+  }
+
+
+  // 3. Ánh xạ trả về cấu trúc thô bảo mật chuẩn UI
+  return {
+    _id: book._id,
+    title: book.title,
+    summary: book.summary,
+    coverImage: book.coverImage,
+    views: book.views,
+    totalChapter: book.totalChapter || 0,
+    status: book.status,
+    createdAt: book.createdAt,
+    updatedAt: book.updatedAt,
+    author: book.creatorId ? {
+      _id: book.creatorId._id,
+      username: book.creatorId.username
+    } : null,
+    category: book.categoryId ? {
+      _id: book.categoryId._id,
+      name: book.categoryId.name
+    } : null
+  };
+};
+
+/**
+ * API 3: Lấy danh sách truyện do chính User hiện tại sáng tác (My Books)
+ */
+export const getMyBooks = async (userId) => {
+  const books = await Book.find({ creatorId: userId })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  return books.map(book => ({
+    _id: book._id,
+    title: book.title,
+    coverImage: book.coverImage,
+    views: book.views,
+    totalChapter: book.totalChapter || 0,
+    status: book.status,
+    reviewStatus: book.reviewStatus,
+    isBan: book.isBan,
+    createdAt: book.createdAt
+  }));
+};
+
+/**
+ * Lấy danh sách truyện chờ duyệt mà Editor hiện tại được gán trách nhiệm quản lý
+ */
+export const getMyReviews = async (userId) => {
+  const books = await Book.find({
+    editorId: userId,
+    reviewStatus: "pending"
+  })
+    .sort({ createdAt: -1 })
+    .populate({ path: "creatorId", select: "_id username" }) // Populate lấy thông tin tác giả gốc
+    .lean();
+
+  return books.map(book => ({
+    _id: book._id,
+    title: book.title,
+    coverImage: book.coverImage,
+    author: book.creatorId ? {
+      _id: book.creatorId._id,
+      username: book.creatorId.username
+    } : null,
+    createdAt: book.createdAt
+  }));
+};
+
+/**
+ * Admin thay đổi Biên tập viên phụ trách kiểm duyệt truyện
+ * @param {String} bookId - Mã định danh của cuốn sách cần đổi Editor
+ * @param {String} targetEditorId - Mã định danh của Editor mới được chỉ định
+ */
+export const changeBookEditor = async ({ bookId, targetEditorId }) => {
+  // 1. Kiểm tra tài khoản Editor mới được chỉ định phải tồn tại
+  const editorUser = await User.findById(targetEditorId);
+  if (!editorUser) {
+    throw new AppError("EDITOR_NOT_FOUND", "Không tìm thấy thông tin Biên tập viên được chỉ định", 404);
+  }
+
+  // 2. Kiểm tra cuốn sách có tồn tại trên hệ thống hay không
+  const book = await Book.findById(bookId);
+  if (!book) {
+    throw new AppError("BOOK_NOT_FOUND", "Không tìm thấy truyện yêu cầu", 404);
+  }
+
+  // 3. Cập nhật Editor phụ trách mới vào trực tiếp thực thể Book
+  const updatedBook = await Book.findByIdAndUpdate(
+    bookId,
+    { $set: { editorId: targetEditorId } },
+    { new: true }
+  ).populate({ path: "editorId", select: "_id username email avatar" });
+
+  return updatedBook;
+};
+
+export const getEditorBooks = async ({ page, limit, filters, sortType, editorId }) => {
+  // 1. Chốt chặn bắt buộc: Chỉ lấy truyện được gán cho chính Editor này
+  const query = { editorId: editorId };
+
+  // 2. Tích hợp bộ lọc động (Dynamic Filters) đồng bộ từ getBooks
+  if (filters.keyword) {
+    query.title = { $regex: filters.keyword, $options: "i" };
+  }
+
+  if (filters.categoryId) {
+    query.categoryId = filters.categoryId;
+  }
+
+  if (filters.status) {
+    query.status = filters.status;
+  }
+
+  if (filters.minChapter && !isNaN(filters.minChapter)) {
+    // Sử dụng totalChapter đã tối ưu từ Task 23 để lọc thay vì đếm real-time
+    query.totalChapter = { $gte: Number(filters.minChapter) }; 
+  }
+
+  // 3. Tích hợp ma trận sắp xếp (Sort Engine) kế thừa từ getBooks
+  let sortCriteria = { createdAt: -1 }; // Mặc định: newest
+  if (sortType === "oldest") {
+    sortCriteria = { createdAt: 1 };
+  } else if (sortType === "most-view") {
+    sortCriteria = { views: -1 };
+  } else if (sortType === "recently-updated") {
+    sortCriteria = { updatedAt: -1 };
+  }
+
+  const skip = (page - 1) * limit;
+
+  // 4. Thực thi truy vấn kết hợp chiếu dữ liệu hẹp và Populate chọn lọc
+  const books = await Book.find(query)
+    .sort(sortCriteria)
+    .skip(skip)
+    .limit(limit)
+    .populate({ path: "creatorId", select: "_id username" })
+    .populate({ path: "categoryId", select: "_id name" })
+    .lean();
+
+  // 5. Chuyển đổi cấu trúc đầu ra tương thích hoàn hảo với Contract UI và Flutter Client
+  const mappedItems = books.map(book => ({
+    _id: book._id,
+    title: book.title,
+    coverImage: book.coverImage,
+    views: book.views,
+    totalChapter: book.totalChapter || 0,
+    status: book.status,
+    reviewStatus: book.reviewStatus, 
+    isBan: book.isBan, 
+    author: book.creatorId ? { _id: book.creatorId._id, username: book.creatorId.username } : null,
+    category: book.categoryId ? { _id: book.categoryId._id, name: book.categoryId.name } : null
+  }));
+
+  const total = await Book.countDocuments(query);
+
+  return {
+    items: mappedItems,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
+  };
 };
