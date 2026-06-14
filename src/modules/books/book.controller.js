@@ -112,3 +112,116 @@ export const handleUpdateBook = async (req, res, next) => {
     return next(error);
   }
 };
+
+
+export const handleGetReviewQueue = async (req, res, next) => {
+  try {
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const { keyword } = req.query;
+
+    const result = await bookService.getReviewQueue({ page, limit, keyword });
+    
+    return res.status(200).json(formatSuccessResponse("Lấy hàng đợi duyệt thành công", result));
+  } catch (error) {
+    return next(error);
+  }
+};
+
+
+export const handleGetReviewDetail = async (req, res, next) => {
+  try {
+    const { id } = req.query; // BẮT BUỘC: Sử dụng req.query.id
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      throw new AppError("VALIDATION_ERROR", "Mã truyện (id) không hợp lệ hoặc thiếu", 400);
+    }
+
+    const result = await bookService.getReviewDetail(id);
+    return res.status(200).json(formatSuccessResponse("Lấy chi tiết truyện cần duyệt thành công", result));
+  } catch (error) {
+    return next(error);
+  }
+};
+
+
+export const handleApproveBook = async (req, res, next) => {
+  try {
+    const { id } = req.query;
+    const { note } = req.body;
+    const currentUser = {
+      userId: req.user?.userId,
+      roleName: req.user?.roleId.name 
+    };
+
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      throw new AppError("VALIDATION_ERROR", "Mã duyệt sách (id) không hợp lệ hoặc thiếu", 400);
+    }
+
+    const updatedBook = await bookService.approveBook({ id, note: note || "Duyệt", currentUser });
+    return res.status(200).json(formatSuccessResponse("Duyệt truyện thành công", { book: updatedBook }));
+  } catch (error) {
+    return next(error);
+  }
+};
+
+
+export const handleRejectBook = async (req, res, next) => {
+  try {
+    const { id } = req.query;
+    const { note } = req.body;
+    const currentUser = {
+      userId: req.user?.userId,
+      roleName: req.user?.roleId.name 
+    };
+
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      throw new AppError("VALIDATION_ERROR", "Mã truyện (id) không hợp lệ hoặc thiếu", 400);
+    }
+    // Validation: note bắt buộc khi reject
+    if (!note || !note.trim()) {
+      throw new AppError("VALIDATION_ERROR", "Lý do từ chối duyệt (note) là bắt buộc", 400);
+    }
+
+    const updatedBook = await bookService.rejectBook({ id, note: note.trim(), currentUser });
+    return res.status(200).json(formatSuccessResponse("Từ chối duyệt truyện thành công", { book: updatedBook }));
+  } catch (error) {
+    return next(error);
+  }
+};
+
+
+export const handleBanBook = async (req, res, next) => {
+  try {
+    const { id } = req.query;
+    const { note } = req.body;
+    const userId = req.user?.userId;
+
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      throw new AppError("VALIDATION_ERROR", "Mã truyện (id) không hợp lệ", 400);
+    }
+    if (!note || !note.trim()) {
+      throw new AppError("VALIDATION_ERROR", "Lý do khóa truyện (note) là bắt buộc", 400);
+    }
+
+    const updatedBook = await bookService.banBook({ id, note: note.trim(), userId });
+    return res.status(200).json(formatSuccessResponse("Khóa truyện thành công", { book: updatedBook }));
+  } catch (error) {
+    return next(error);
+  }
+};
+
+
+export const handleUnbanBook = async (req, res, next) => {
+  try {
+    const { id } = req.query;
+    const userId = req.user?.userId;
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      throw new AppError("VALIDATION_ERROR", "Mã truyện (id) không hợp lệ", 400);
+    }
+
+    const updatedBook = await bookService.unbanBook(id, userId);
+    return res.status(200).json(formatSuccessResponse("Mở khóa truyện thành công", { book: updatedBook }));
+  } catch (error) {
+    return next(error);
+  }
+};

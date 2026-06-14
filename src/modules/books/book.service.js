@@ -239,3 +239,345 @@ export const updateBook = async ({ id, payload, file, currentUser }) => {
 
   return null;
 };
+
+/**
+ * Lấy danh sách truyện trong hàng đợi duyệt
+ */
+export const getReviewQueue = async ({ page, limit, keyword }) => {
+  const skip = (page - 1) * limit;
+
+  let reviewStatus = "pending"
+
+  // 1. Khởi tạo Object điều kiện lọc cho bảng BookReviewLog
+  const logQuery = { reviewStatus };
+
+  // 2. Nếu có từ khóa tìm kiếm (keyword), ta cần tìm các bookId thỏa mãn title trước
+  if (keyword) {
+    const matchingBooks = await Book.find({
+      title: { $regex: keyword, $options: "i" }
+    }, "_id").lean();
+
+    const matchingBookIds = matchingBooks.map(b => b._id);
+    logQuery.bookId = { $in: matchingBookIds };
+  }
+
+  // 3. Thực hiện truy vấn chính trên bảng BookReviewLog kết hợp Nested Populate (Lồng nhau)
+  const reviewLogs = await BookReviewLog.find(logQuery)
+    .sort({ createdAt: 1 })
+    .skip(skip)
+    .limit(limit)
+    .populate({
+      path: "bookId",
+      select: "_id title coverImage status categoryId creatorId",
+      populate: [
+        {
+          path: "creatorId",
+          select: "_id username email avatar"
+        },
+        {
+          path: "categoryId",
+          select: "name"
+        }
+      ]
+    })
+    .lean();
+
+  // 4. Định dạng và chuẩn hóa cấu trúc dữ liệu đầu ra phù hợp với UI Flutter Client
+  const mappedItems = reviewLogs
+    .filter(log => log.bookId) // Phòng ngừa trường hợp truyện gốc đã bị xóa vật lý khỏi DB
+    .map(log => {
+      const book = log.bookId;
+      const author = book.creatorId;
+      const category = book.categoryId;
+
+      // Kiểm tra xem note có chứa chuỗi bản vá dữ liệu JSON (Task 21) hay không để hiển thị thông tin mới nhất ra hàng đợi
+      let displayTitle = book.title;
+      let displayCoverImage = book.coverImage;
+
+      if (log.note) {
+        try {
+          const parsedNote = JSON.parse(log.note);
+          if (parsedNote.type === "EDIT_REQUEST" && parsedNote.draftData) {
+            if (parsedNote.draftData.title) displayTitle = parsedNote.draftData.title;
+            if (parsedNote.draftData.coverImage) displayCoverImage = parsedNote.draftData.coverImage;
+          }
+        } catch (e) {
+          // Note dạng chuỗi thuần túy (Luồng tạo mới truyện Task 20), giữ nguyên dữ liệu gốc
+        }
+      }
+
+      return {
+        _id: book._id,                // Trả về ID truyện để phục vụ việc bấm xem chi tiết ở Client
+        logId: log._id,              // ID của bản ghi log kiểm duyệt
+        title: displayTitle,         // Tên truyện (Đã ưu tiên hiển thị tên mới lưu tạm trong bản nháp)
+        coverImage: displayCoverImage, // Ảnh truyện (Đã ưu tiên hiển thị ảnh bìa mới lưu tạm trong bản nháp)
+        status: book.status,
+        reviewStatus: log.reviewStatus,
+        reviewCount: log.reviewCount, // Đưa ra số thứ tự của phiên duyệt/sửa đổi theo yêu cầu bài toán
+        createdAt: log.createdAt,    // Thời điểm gửi yêu cầu duyệt
+        category: category ? { _id: category._id, name: category.name } : null,
+        author: author ? {
+          _id: author._id,
+          username: author.username,
+          email: author.email,
+          avatar: author.avatar
+        } : null
+      };
+    });
+
+  const total = await BookReviewLog.countDocuments(logQuery);
+
+  return {
+    items: mappedItems,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
+  };
+};
+
+/**
+ * Lấy chi tiết truyện cần duyệt kèm lịch sử review toàn cục
+ */
+export const getReviewDetail = async (id) => {
+  const book = await Book.findById(id)
+    .populate({ path: "categoryId", select: "_id name" })
+    .populate({ path: "creatorId", select: "_id username email avatar createdAt" })
+    .populate({ path: "editorId", select: "_id username email avatar" })
+    .lean();
+
+  if (!book) {
+    throw new AppError("BOOK_NOT_FOUND", "Không tìm thấy truyện cần duyệt", 404);
+  }
+
+  // Truy vấn lịch sử đánh giá theo quy tắc Index: Sắp xếp giảm dần theo thời gian tạo
+  const reviewLogs = await BookReviewLog.find({ bookId: id })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  // Mapping cấu trúc trả về tương thích API Contract
+  return {
+    book: {
+      _id: book._id,
+      title: book.title,
+      summary: book.summary,
+      coverImage: book.coverImage,
+      status: book.status,
+      reviewStatus: book.reviewStatus,
+      views: book.views,
+      createdAt: book.createdAt,
+      updatedAt: book.updatedAt,
+      category: book.categoryId,
+      author: book.creatorId,
+      editor: book.editorId || null
+    },
+    reviewLogs
+  };
+};
+
+export const approveBook = async ({ id, note, currentUser }) => {
+  const { userId, roleName } = currentUser;
+  // 1. Kiểm tra bản ghi BookReviewLog phải tồn tại trong cơ sở dữ liệu
+  const currentLog = await BookReviewLog.findById(id);
+  if (!currentLog) {
+    throw new AppError("REVIEW_LOG_NOT_FOUND", "Không tìm thấy lịch sử phiên kiểm duyệt", 404);
+  }
+
+  // Kiểm tra tính hợp lệ của trạng thái log (Tránh việc phê duyệt lại một bản ghi đã xử lý)
+  if (currentLog.reviewStatus !== "pending") {
+    throw new AppError("BAD_REQUEST", "Phiên kiểm duyệt này đã được xử lý trước đó", 400);
+  }
+
+  // 2. CHỐT CHẶN PHÂN QUYỀN: Bắt buộc là Admin hoặc chính Editor được giao phụ trách bản ghi log này
+  const isAssignedEditor = currentLog.editorId && currentLog.editorId.toString() === userId;
+  const isAdmin = roleName === "Admin";
+
+  if (!isAssignedEditor && !isAdmin) {
+    throw new AppError("PERMISSION_DENIED", "Bạn không có quyền duyệt phiên kiểm duyệt này", 403);
+  }
+
+  // 3. Kiểm tra thực thể Book liên kết xem có tồn tại hay không
+  const book = await Book.findById(currentLog.bookId);
+  if (!book) {
+    throw new AppError("BOOK_NOT_FOUND", "Không tìm thấy truyện liên kết với phiên duyệt này", 404);
+  }
+
+  // 4. Khởi tạo cấu trúc cập nhật trạng thái cốt lõi cho Book
+  let dataUpdate = {
+    reviewStatus: "approved",
+  };
+
+  // 5. KIỂM TRA BẢN VÁ DỮ LIỆU (DATA PATCHING): Bóc tách JSON trực tiếp từ bản ghi log hiện tại
+  if (currentLog.note) {
+    try {
+      const parsedNote = JSON.parse(currentLog.note);
+      if (parsedNote.type === "EDIT_REQUEST" && parsedNote.draftData) {
+        // Đồng bộ đè dữ liệu sửa đổi nháp từ log note vào trực tiếp bảng Book
+        dataUpdate = { ...dataUpdate, ...parsedNote.draftData };
+      }
+    } catch (e) {
+      // Trường note là chữ thường thuần túy (Luồng truyện mới tạo), bỏ qua bóc tách JSON
+    }
+  }
+  // 6. Thực hiện cập nhật thay đổi nội dung sang bảng Book
+  const updatedBook = await Book.findByIdAndUpdate(
+    currentLog.bookId,
+    { $set: dataUpdate },
+    { returnDocument: 'after', runValidators: true }
+  );
+  // 7. Cập nhật chính trạng thái của bản ghi BookReviewLog hiện tại từ 'pending' sang 'approved'
+  let updatedNoteStr = "";
+
+  try {
+    // 1. Nếu currentLog.note có dữ liệu, parse nó ra object. Nếu rỗng "", khởi tạo object mới có cấu trúc mặc định
+    const noteObj = currentLog.note ? JSON.parse(currentLog.note) : { type: "CREATE_REQUEST", draftData: {} };
+
+    // 2. Gán giá trị của biến note vào thuộc tính userReason
+    noteObj.userReason = note;
+
+    // 3. Chuyển object thành chuỗi JSON để chuẩn bị cập nhật vào Database
+    updatedNoteStr = JSON.stringify(noteObj);
+  } catch (error) {
+    // Phòng trường hợp chuỗi trong DB bị lỗi định dạng JSON
+    console.error("Lỗi parse JSON note:", error);
+    updatedNoteStr = JSON.stringify({ type: "EDIT_REQUEST", draftData: {}, userReason: note });
+  }
+  currentLog.note = updatedNoteStr;
+  currentLog.reviewStatus = "approved";
+  currentLog.editorId = userId; // Đảm bảo lưu đúng ID người thực tế bấm nút duyệt (trong trường hợp Admin duyệt thay)
+  await currentLog.save();
+
+  return updatedBook;
+};
+
+export const rejectBook = async ({ id, note, currentUser }) => {
+  const { userId, roleName } = currentUser;
+
+  // 1. Kiểm tra bản ghi BookReviewLog phải tồn tại trong cơ sở dữ liệu
+  const currentLog = await BookReviewLog.findById(id);
+  if (!currentLog) {
+    throw new AppError("REVIEW_LOG_NOT_FOUND", "Không tìm thấy lịch sử phiên kiểm duyệt", 404);
+  }
+
+  // Chặn trường hợp xử lý lại một bản ghi log đã hoàn thành
+  if (currentLog.reviewStatus !== "pending") {
+    throw new AppError("BAD_REQUEST", "Phiên kiểm duyệt này đã được xử lý trước đó", 400);
+  }
+
+  // 2. CHỐT CHẶN PHÂN QUYỀN: Phải là Admin hoặc đúng Editor được phân công chịu trách nhiệm bản ghi log này
+  const isAssignedEditor = currentLog.editorId && currentLog.editorId.toString() === userId;
+  const isAdmin = roleName === "Admin";
+
+  if (!isAssignedEditor && !isAdmin) {
+    throw new AppError("PERMISSION_DENIED", "Bạn không có quyền từ chối phiên kiểm duyệt này", 403);
+  }
+
+  // 3. Kiểm tra tính toàn vẹn - Thực thể Book liên kết phải tồn tại
+  const book = await Book.findById(currentLog.bookId);
+  if (!book) {
+    throw new AppError("BOOK_NOT_FOUND", "Không tìm thấy truyện liên kết với phiên duyệt này", 404);
+  }
+
+  // 4. KIỂM TRA LOẠI YÊU CẦU ĐỂ ĐIỀU HƯỚNG TRẠNG THÁI BẢNG BOOK CHÍNH XÁC
+  let isEditRequest = false;
+  if (currentLog.note) {
+    try {
+      const parsedNote = JSON.parse(currentLog.note);
+      if (parsedNote.type === "EDIT_REQUEST") {
+        isEditRequest = true; // Đây là yêu cầu sửa đổi nội dung từ Task 21
+      }
+    } catch (e) {
+      // Note là text thuần -> Đây là yêu cầu duyệt truyện mới tạo (Task 20)
+    }
+  }
+
+  // 5. CẬP NHẬT TRẠNG THÁI BẢNG BOOK (Có chọn lọc)
+  if (!isEditRequest) {
+    // Nếu từ chối một cuốn truyện mới tạo (Task 20), ta đưa reviewStatus của Book về 'rejected'
+    await Book.findByIdAndUpdate(currentLog.bookId, {
+      $set: { 
+        reviewStatus: "rejected",
+        editorId: userId // Ghi nhận editor/admin thực tế xử lý từ chối
+      }
+    });
+  }
+
+  // 6. CẬP NHẬT TRỰC TIẾP TRÊN BẢN GHI BOOKREVIEWLOG HIỆN TẠI
+  currentLog.reviewStatus = "rejected";
+  currentLog.note = note; // Ghi nhận lý do từ chối cụ thể (ví dụ: "Ảnh bìa nhạy cảm", "Sai chính tả")
+  currentLog.editorId = userId; // Ghi nhận ID người thực tế thao tác bấm nút (Phòng trường hợp Admin duyệt thay)
+  
+  await currentLog.save();
+
+  // 7. Lấy lại dữ liệu truyện sau khi xử lý để trả về đồng bộ với API Contract
+  const updatedBook = await Book.findById(currentLog.bookId);
+  return updatedBook;
+};
+
+/**
+ * Ban Book - Khóa truyện vi phạm chính sách hệ thống
+ */
+export const banBook = async ({ id, note, userId }) => {
+  const book = await Book.findById(id);
+  if (!book) {
+    throw new AppError("BOOK_NOT_FOUND", "Không tìm thấy truyện", 404);
+  }
+
+  if (book.isBan) {
+    throw new AppError("BOOK_ALREADY_BANNED", "Truyện này đã bị khóa từ trước đó", 400);
+  }
+
+  const lastLog = await BookReviewLog.findOne({ bookId: id }).sort({ createdAt: -1 }).lean();
+  const previousReviewCount = lastLog ? lastLog.reviewCount : 0;
+
+  // Thực hiện đồng thời hạ trạng thái hiển thị và cắm cờ khóa
+  const updatedBook = await Book.findByIdAndUpdate(
+    id,
+    { $set: { isBan: true } },
+    { returnDocument: "after" }
+  );
+
+  // Lưu vết lịch sử khóa của Admin vào Log
+  await BookReviewLog.create({
+    bookId: id,
+    editorId: userId,
+    reviewStatus: "rejected",
+    note: `[BAN REASON]: ${note}`,
+    reviewCount: previousReviewCount + 1
+  });
+
+  return updatedBook;
+};
+
+/**
+ * Unban Book - Mở khóa truyện
+ */
+export const unbanBook = async (id, userId) => {
+  const book = await Book.findById(id);
+  if (!book) {
+    throw new AppError("BOOK_NOT_FOUND", "Không tìm thấy truyện", 404);
+  }
+
+  if (!book.isBan) {
+    throw new AppError("BOOK_ALREADY_UNBANNED", "Truyện này đã mở khóa từ trước đó", 400);
+  }
+
+  // 1. Cập nhật trạng thái truyện bằng Atomic Update
+  const updatedBook = await Book.findByIdAndUpdate(
+    id,
+    { $set: { isBan: false, status: "approved" } },
+    { returnDocument: "after" }
+  );
+
+  // 2. Tìm log reject gần nhất để lấy reviewCount hiện tại
+  const lastLog = await BookReviewLog.findOne({ bookId: id }).sort({ createdAt: -1 });
+  const currentReviewCount = lastLog ? lastLog.reviewCount : 0;
+
+  // 3. Ghi log mới ghi nhận việc UNBAN 
+  await BookReviewLog.create({
+    bookId: id,
+    editorId: userId,
+    reviewStatus: "approved",
+    note: "[UNBAN]: Truyện đã được mở khóa bởi Admin",
+    reviewCount: currentReviewCount + 1
+  });
+
+  return updatedBook;
+};
