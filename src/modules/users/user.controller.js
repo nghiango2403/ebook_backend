@@ -146,3 +146,12 @@ export const handleRemoveFcmToken = async (req, res, next) => {
     return next(error);
   }
 };
+
+export const handleGetEditorsList = async (req, res, next) => {
+  try {
+    const editors = await userService.getEditorsList();
+    return res.status(200).json(formatSuccessResponse("Lấy danh sách biên tập viên thành công", { items: editors }));
+  } catch (error) {
+    return next(error);
+  }
+};

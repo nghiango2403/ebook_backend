@@ -27,5 +27,6 @@ router.get("/", userController.handleGetUsers); // Gộp chung route xử lý l�
 router.patch("/role", userController.handleUpdateUserRole);
 router.patch("/ban", userController.handleBanUser);
 router.patch("/unban", userController.handleUnbanUser);
+router.get("/editors", authMiddleware, requireRole("Admin"), userController.handleGetEditorsList);
 
 export default router;

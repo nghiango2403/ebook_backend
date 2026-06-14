@@ -226,3 +226,22 @@ export const removeFcmToken = async (userId) => {
   
   return null;
 };
+
+/**
+ * Lấy danh sách toàn bộ Editor trong hệ thống
+ */
+export const getEditorsList = async () => {
+  // 1. Tìm định danh _id của vai trò 'Editor' trong cơ sở dữ liệu trước
+  const editorRole = await Role.findOne({ name: "Editor" }).lean();
+  if (!editorRole) {
+    throw new AppError("ROLE_NOT_FOUND", "Không tìm thấy cấu hình vai trò Editor trên hệ thống", 404);
+  }
+
+  // 2. Truy vấn danh sách người dùng mang roleId này và lọc bớt các trường nhạy cảm (Projection)
+  const editors = await User.find({ roleId: editorRole._id })
+    .select("_id username email avatar createdAt")
+    .sort({ username: 1 }) // Sắp xếp theo bảng chữ cái từ A-Z
+    .lean();
+
+  return editors;
+};
