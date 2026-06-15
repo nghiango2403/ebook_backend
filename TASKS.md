@@ -4,8 +4,9 @@
 
 # 🕒 LỊCH SỬ CẬP NHẬT TIẾN ĐỘ (SYSTEM LOG)
 
-**Tiến độ tổng thể:** `||██████████████████████░|| 22/35 Tasks (62.86%)
+**Tiến độ tổng thể:** `||███████████████████████░|| 23/35 Tasks (65.71%)
 
+* **15/06/2026:** Hoàn thành Task 23: Thiết lập hạ tầng định tuyến an toàn qua `authMiddleware` cho 6 API hệ thống truyện; hoàn thiện bộ lọc động đồng bộ, cơ chế tăng lượt xem độc lập và tính năng phân phối/truy vấn công việc nâng cao của phân hệ Editor/Admin.
 * **14/06/2026:** Hoàn thành Task 22: Triển khai các API điều hướng trạng thái vòng đời sách & Hoàn thiện cơ chế bóc tách JSON Patching khi phê duyệt.
 * **13/06/2026:** Hoàn thành Task 21: Phát triển API Chỉnh sửa Truyện
 * **12/06/2026:** Hoàn thành Task 20: API Tạo Truyện & Đóng gói luồng tải lên Cloudflare R2.
@@ -331,7 +332,7 @@
 
 ---
 
-### [ ] Task 23: API Danh sách & Chi tiết Truyện
+### [x] Task 23: API Danh sách & Chi tiết Truyện
 
 **File xử lý:** `src/modules/books/*`
 

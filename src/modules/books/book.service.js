@@ -17,8 +17,39 @@ import { AppError } from "../../utils/appError.js";
  * Chiến lược: Ưu tiên Role 'Editor'. Nếu không có ai, tự động hạ cấp dự phòng (Fallback) sang Role 'Admin'.
  * @returns {Promise<String|null>} ID của Editor hoặc Admin thích hợp, hoặc null nếu hệ thống lỗi phân quyền
  */
-const findLeastLoadedEditor = async () => {
-  // 1. Tìm thông tin Role 'Editor' và 'Admin' từ DB
+const findLeastLoadedEditor = async (creatorId) => {
+  const now = new Date();
+  // 1. CHIẾN LƯỢC ƯU TIÊN 1 (Contextual Routing): Tìm Editor đã từng duyệt truyện của tác giả này gần đây nhất
+  if (creatorId) {
+    const lastAssignedBook = await Book.findOne({
+      creatorId: creatorId,
+      editorId: { $ne: null } 
+    })
+      .sort({ updatedAt: -1 }) 
+      .select("editorId")
+      .lean();
+
+    if (lastAssignedBook && lastAssignedBook.editorId) {
+      // Kiểm tra xem Editor cũ này có đang bị Ban (Khóa tài khoản) hay không
+      const isAvailableEditor = await User.findOne({
+        _id: lastAssignedBook.editorId,
+        $or: [
+          { timeBan: { $lt: now } },
+          { timeBan: { $exists: false } },
+          { timeBan: null }
+        ]
+      }).lean();
+
+      if (isAvailableEditor) {
+        return lastAssignedBook.editorId; 
+      }
+    }
+  }
+  // =========================================================================
+  // CHIẾN LƯỢC DỰ PHÒNG (Fallback Strategy): Nếu không tìm thấy Editor cũ, tính toán theo Tải
+  // =========================================================================
+
+  // 2. Tìm thông tin Role 'Editor' và 'Admin' từ DB
   const [editorRole, adminRole] = await Promise.all([
     Role.findOne({ name: "Editor" }).lean(),
     Role.findOne({ name: "Admin" }).lean()
@@ -27,7 +58,7 @@ const findLeastLoadedEditor = async () => {
   let targetRole = editorRole;
   let targetUsers = [];
 
-  // 2. Thử lấy danh sách các User có vai trò là Editor trước
+  // 3. Thử lấy danh sách các User có vai trò là Editor trước
   if (editorRole) {
     targetUsers = await User.find({
       roleId: editorRole._id, $or: [
@@ -38,7 +69,7 @@ const findLeastLoadedEditor = async () => {
     }, "_id").lean();
   }
 
-  // 3. CƠ CHẾ DỰ PHÒNG: Nếu hoàn toàn không có Editor nào, chuyển mục tiêu sang quét nhóm Admin
+  // 4. CƠ CHẾ DỰ PHÒNG: Nếu hoàn toàn không có Editor nào, chuyển mục tiêu sang quét nhóm Admin
   if (targetUsers.length === 0 && adminRole) {
     targetRole = adminRole;
     targetUsers = await User.find({ roleId: adminRole._id }, "_id").lean();
@@ -54,7 +85,7 @@ const findLeastLoadedEditor = async () => {
     {
       $match: {
         editorId: { $in: targetUserIds },
-        reviewStatus: "pending"
+        status: "pending"
       }
     },
     {
