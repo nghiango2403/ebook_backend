@@ -110,4 +110,8 @@ router.get(
   bookController.handleGetEditorBooks
 );
 
+;
+// API: GET /api/v1/books/pending-chapters - Lấy thông tin sách kèm theo số lần đang chờ duyệt chương
+router.get("/pending-chapters", authMiddleware, bookController.getBooksWithPendingChapters)
+
 export default router;

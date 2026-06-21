@@ -374,3 +374,29 @@ export const handleGetEditorBooks = async (req, res, next) => {
     return next(error);
   }
 };
+
+export const getBooksWithPendingChapters = async (req, res, next) => {
+  try {
+    const { page, limit } = req.query;
+    const currentUser = {
+      userId: req.user?.userId,
+      roleName: req.user?.roleId.name 
+    };
+    // Gọi tầng Service xử lý Logic nghiệp vụ
+    const result = await bookService.getBooksWithPendingChaptersCount({
+      currentUser,
+      page: page ? Number(page) : 1,
+      limit: limit ? Number(limit) : 10
+    });
+
+    // Trả về dữ liệu chuẩn cấu trúc JSON API cho Flutter Client
+    return res.status(200).json({
+      success: true,
+      message: "Lấy danh sách sách chờ duyệt chương thành công",
+      data: result,
+    });
+  } catch (error) {
+    // Chuyển tiếp lỗi sang Global Error Handler Middleware xử lý (ví dụ: AppError)
+    next(error);
+  }
+};

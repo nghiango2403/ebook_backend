@@ -882,3 +882,79 @@ export const getEditorBooks = async ({ page, limit, filters, sortType, editorId 
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
   };
 };
+
+
+/**
+ * Admin, editor của sách lấy danh sách sách kèm số chương đang chờ duyệt
+ */
+export const getBooksWithPendingChaptersCount = async ({ currentUser, page = 1, limit = 10 }) => {
+  const { userId, roleName } = currentUser;
+  const skip = (Number(page) - 1) * Number(limit);
+  // 1. XÂY DỰNG BỘ LỌC PHÂN QUYỀN TRUY CẬP (ADMIN, EDITOR, CREATOR)
+  const bookMatchFilter = {};
+  if (roleName === "Editor") {
+    bookMatchFilter.editorId = new mongoose.Types.ObjectId(userId);
+  } else if (roleName !== "Admin") {
+    throw new AppError("PERMISSION_DENIED", "Bạn không có quyền truy cập dữ liệu này", 403);
+  }
+
+  // 2. PIPELINE AGGREGATION TỐI ƯU HÓA HIỆU NĂNG DB
+  const results = await Book.aggregate([
+  { $match: bookMatchFilter },
+  {
+    $lookup: {
+      from: "chapter_review_logs",
+      let: { bookId: "$_id" },
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $and: [
+                { $eq: ["$bookId", "$$bookId"] },
+                { $eq: ["$reviewStatus", "pending"] }
+              ]
+            }
+          }
+        },
+        { $count: "pendingCount" }
+      ],
+      as: "pendingChapters"
+    }
+  },
+  {
+    $project: {
+      _id: 1,
+      title: 1,
+      coverImage: 1,
+      status: 1,
+      creatorId: 1,
+      editorId: 1,
+      pendingChaptersCount: {
+        $ifNull: [{ $arrayElemAt: ["$pendingChapters.pendingCount", 0] }, 0]
+      }
+    }
+  },
+  // CHỐT CHẶN BỔ SUNG: Chỉ lọc ra những sách có số chương chờ duyệt > 0
+  { $match: { pendingChaptersCount: { $gt: 0 } } }, 
+  { $sort: { pendingChaptersCount: -1, _id: -1 } },
+  {
+    $facet: {
+      metadata: [{ $count: "total" }],
+      data: [{ $skip: skip }, { $limit: Number(limit) }]
+    }
+  }
+]);
+
+  const total = results[0]?.metadata[0]?.total || 0;
+  const data = results[0]?.data || [];
+
+  return {
+    books: data,
+    pagination: {
+      total,
+      page: Number(page),
+      limit: Number(limit),
+      totalPages: Math.ceil(total / limit)
+    }
+  };
+};
